@@ -1,0 +1,11 @@
+{
+  "address": "194yabfEGd5jTr3kzfW7Eb1P1aTvFG84jB",
+  "total_received": 50000000000000,
+  "total_sent": 0,
+  "balance": 50000000000000,
+  "unconfirmed_balance": 0,
+  "final_balance": 50000000000000,
+  "n_tx": 1,
+  "unconfirmed_n_tx": 0,
+  "final_n_tx": 1,
+  "txs": []}
