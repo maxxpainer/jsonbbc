@@ -1,0 +1,23 @@
+name: Gaming-PC-RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 1440   # 24 hours 😌
+
+    steps:
+      - name: Enable RDP
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: Create User
+        run: |
+          net user gamer P@ssw0rd123 /add
+          net localgroup administrators gamer /add
+
+      - name: Start RDP Tunnel
+        uses: mxschmitt/action-tmate@v3
