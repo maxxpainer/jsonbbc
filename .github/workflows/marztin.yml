@@ -1,0 +1,27 @@
+name: Gaming-PC-RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Enable RDP
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: Create User
+        run: |
+          net user gamer P@ssw0rd123 /add
+          net localgroup administrators gamer /add
+
+      - name: Start RDP Tunnel (no public SSH warning fix)
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
+          ssh-authorized-keys: |
+            ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDUMMYKEYREPLACEWITHYOURPUBLICSSHKEY
