@@ -1,0 +1,64 @@
+name: RDP-Gaming-Tailscale
+
+on:
+  workflow_dispatch:
+
+jobs:
+  secure-rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360   # GitHub MAX (6 hours)
+
+    steps:
+      - name: Configure Core RDP Settings
+        run: |
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -Value 0
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name UserAuthentication -Value 0
+          Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name SecurityLayer -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Restart-Service TermService -Force
+
+      - name: Create RDP User (password 123)
+        run: |
+          net user gamer 123 /add
+          net localgroup administrators gamer /add
+          net localgroup "Remote Desktop Users" gamer /add
+
+      - name: Gaming Performance Customization
+        run: |
+          powercfg -setactive SCHEME_MIN
+          reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f
+          reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d 0 /f
+          reg add "HKCU\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f
+          reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v GlobalUserDisabled /t REG_DWORD /d 1 /f
+          sc stop SysMain
+          sc config SysMain start=disabled
+          sc stop WSearch
+          sc config WSearch start=disabled
+
+      - name: Install Tailscale
+        run: |
+          Invoke-WebRequest https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe -OutFile tailscale.exe
+          Start-Process tailscale.exe -ArgumentList "/quiet" -Wait
+
+      - name: Connect Tailscale
+        env:
+          TS_AUTHKEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+        run: |
+          "C:\Program Files\Tailscale\tailscale.exe" up --authkey=$Env:TS_AUTHKEY --hostname=gh-gaming-$env:GITHUB_RUN_ID
+          $ip = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+          echo "TAILSCALE_IP=$ip" >> $env:GITHUB_ENV
+
+      - name: Show RDP Details
+        run: |
+          Write-Host "=========================="
+          Write-Host "RDP IP  : $env:TAILSCALE_IP"
+          Write-Host "USER    : gamer"
+          Write-Host "PASS    : 123"
+          Write-Host "=========================="
+
+      - name: Keep Session Alive
+        run: |
+          while ($true) {
+            Write-Host "[$(Get-Date)] RDP Active"
+            Start-Sleep -Seconds 300
+          }
