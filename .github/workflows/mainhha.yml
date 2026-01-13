@@ -1,0 +1,37 @@
+name: Gaming-RDP-Custom
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360   # GitHub max (6 hours)
+
+    steps:
+      - name: Enable RDP
+        run: |
+          Set-ItemProperty "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name fDenyTSConnections -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: Create User (password 123)
+        run: |
+          net user gamer 123 /add
+          net localgroup administrators gamer /add
+
+      - name: Gaming Performance Customize
+        run: |
+          powercfg -setactive SCHEME_MIN
+          reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f
+          reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d 0 /f
+          reg add "HKCU\Control Panel\Desktop" /v AutoEndTasks /t REG_SZ /d 1 /f
+          reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v GlobalUserDisabled /t REG_DWORD /d 1 /f
+          sc stop SysMain
+          sc config SysMain start=disabled
+          sc stop WSearch
+          sc config WSearch start=disabled
+
+      - name: Start RDP (tmate)
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
